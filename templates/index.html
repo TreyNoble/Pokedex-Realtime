@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Real-Time Pokédex</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: #1a1a2e;
+      color: #eee;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      color: #ffcb05;
+      text-shadow: 3px 3px #3b4cca;
+      letter-spacing: 4px;
+      font-size: 42px;
+      margin-bottom: 20px;
+    }
+
+    .container {
+      display: flex;
+      gap: 24px;
+      align-items: flex-start;
+    }
+
+    /* ---------- Video ---------- */
+    .video-frame {
+      border: 6px solid #ffcb05;
+      border-radius: 16px;
+      box-shadow: 0 0 40px rgba(255, 203, 5, 0.35);
+      overflow: hidden;
+      background: #000;
+    }
+    .video-frame img { display: block; width: 720px; height: 540px; object-fit: cover; }
+
+    /* ---------- Pokédex panel ---------- */
+    .panel {
+      width: 360px;
+      background: linear-gradient(160deg, #dc0a2d 0%, #a10020 100%);
+      border: 6px solid #ffcb05;
+      border-radius: 16px;
+      padding: 20px;
+      box-shadow: 0 0 40px rgba(220, 10, 45, 0.4);
+      min-height: 540px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .screen {
+      background: #f5f5dc;
+      color: #1a1a2e;
+      border: 4px solid #1a1a2e;
+      border-radius: 10px;
+      padding: 16px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    /* ---------- Idle state ---------- */
+    .idle { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+    .idle img { width: 140px; height: 140px; opacity: 0.75; animation: spin 4s linear infinite; }
+    .idle p { margin-top: 16px; font-weight: 600; color: #555; letter-spacing: 2px; }
+    @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+    /* ---------- Detected state ---------- */
+    .sprite { width: 180px; height: 180px; object-fit: contain; }
+    .name { font-size: 28px; font-weight: 700; color: #dc0a2d; letter-spacing: 2px; margin-top: 4px; }
+    .genus { font-size: 13px; color: #666; font-style: italic; margin-bottom: 10px; }
+
+    .types { display: flex; gap: 8px; margin-bottom: 12px; }
+    .type-badge {
+      padding: 4px 14px;
+      border-radius: 14px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.4);
+    }
+
+    .abilities { font-size: 12px; color: #333; margin-bottom: 10px; }
+    .abilities strong { color: #dc0a2d; }
+
+    .flavor {
+      font-size: 12px;
+      line-height: 1.5;
+      color: #222;
+      background: #fff;
+      border: 1px dashed #999;
+      padding: 10px;
+      border-radius: 6px;
+      width: 100%;
+    }
+
+    .confidence {
+      margin-top: 12px;
+      font-size: 11px;
+      color: #666;
+    }
+
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <h1>POKÉDEX</h1>
+  <div class="container">
+
+    <div class="video-frame">
+      <img src="{{ url_for('video_feed') }}">
+    </div>
+
+    <div class="panel">
+      <div class="screen">
+        <!-- Idle state -->
+        <div id="idle" class="idle">
+          <img src="{{ url_for('static', filename='pokeball.svg') }}" alt="Pokéball">
+          <p>SCANNING...</p>
+        </div>
+
+        <!-- Detected state -->
+        <div id="detected" class="hidden" style="width: 100%;">
+          <img id="sprite" class="sprite" alt="">
+          <div id="name" class="name"></div>
+          <div id="genus" class="genus"></div>
+          <div id="types" class="types"></div>
+          <div id="abilities" class="abilities"></div>
+          <div id="flavor" class="flavor"></div>
+          <div id="confidence" class="confidence"></div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Official Pokémon type colors
+    const TYPE_COLORS = {
+      normal: "#A8A77A", fire: "#EE8130", water: "#6390F0", electric: "#F7D02C",
+      grass: "#7AC74C", ice: "#96D9D6", fighting: "#C22E28", poison: "#A33EA1",
+      ground: "#E2BF65", flying: "#A98FF3", psychic: "#F95587", bug: "#A6B91A",
+      rock: "#B6A136", ghost: "#735797", dragon: "#6F35FC", dark: "#705746",
+      steel: "#B7B7CE", fairy: "#D685AD",
+    };
+
+    const idleEl = document.getElementById("idle");
+    const detectedEl = document.getElementById("detected");
+
+    async function poll() {
+      try {
+        const res = await fetch("/current");
+        const data = await res.json();
+
+        if (!data.pokemon || !data.info) {
+          // Nothing detected -> show idle
+          idleEl.classList.remove("hidden");
+          detectedEl.classList.add("hidden");
+          return;
+        }
+
+        // Show detected panel
+        idleEl.classList.add("hidden");
+        detectedEl.classList.remove("hidden");
+
+        const info = data.info;
+        document.getElementById("sprite").src = info.sprite;
+        document.getElementById("name").textContent = info.name;
+        document.getElementById("genus").textContent = info.genus;
+
+        // Type badges with colors
+        const typesEl = document.getElementById("types");
+        typesEl.innerHTML = "";
+        info.types.forEach(t => {
+          const badge = document.createElement("span");
+          badge.className = "type-badge";
+          badge.textContent = t;
+          badge.style.background = TYPE_COLORS[t] || "#777";
+          typesEl.appendChild(badge);
+        });
+
+        document.getElementById("abilities").innerHTML =
+          "<strong>ABILITIES:</strong> " + info.abilities.join(", ");
+        document.getElementById("flavor").textContent = info.flavor;
+        document.getElementById("confidence").textContent =
+          "Confidence: " + (data.confidence * 100).toFixed(0) + "%";
+
+      } catch (e) {
+        console.error("Poll error:", e);
+      }
+    }
+
+    // Poll twice a second
+    setInterval(poll, 500);
+    poll();
+  </script>
+</body>
+</html>
