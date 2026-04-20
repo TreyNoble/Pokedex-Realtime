@@ -1,0 +1,38 @@
+# Real-Time Pokédex
+
+A real-time Pokémon classification system that uses a webcam feed to identify 15 different Pokémon and display live Pokédex information including type, abilities, and flavor text.
+
+## How It Works
+- Webcam frames are captured and classified every 2 frames using YOLO11s-cls
+- A stability buffer of 8 consecutive confident frames prevents flickering
+- Once a Pokémon is locked in, metadata is fetched from PokéAPI and displayed in a styled panel
+- The web interface is served locally via Flask
+
+## Pokémon Supported
+Bulbasaur, Charizard, Squirtle, Pikachu, Eevee, Vaporeon, Snorlax, Gengar, Jigglypuff, Mewtwo, Mew, Dragonite, Arcanine, Lapras, Gyarados
+
+## Model Comparison
+| Model | Accuracy | F1 | Size | FPS |
+|---|---|---|---|---|
+| YOLO11s-cls | 91.5% | 0.92 | 10.5 MB | 126 |
+| ResNet50 | 90.9% | 0.91 | 90.1 MB | 172* |
+| EfficientNet-B0 | 91.6% | 0.92 | 15.6 MB | 128* |
+
+*GPU tensor throughput only
+
+## How To Run
+1. Clone the repo
+2. Create and activate a virtual environment
+3. Install dependencies: `pip install flask opencv-python ultralytics requests`
+4. Run: `python stream.py`
+5. Open `http://localhost:5000` in your browser
+
+## Tech Stack
+- Python, Flask, OpenCV
+- Ultralytics YOLO11s-cls
+- PyTorch + torchvision (ResNet50, EfficientNet-B0)
+- PokéAPI
+- Google Colab (T4 GPU for training)
+
+## Dataset
+[1282 Pokemon | 139542 Images | Updated Pokedex Dataset](https://www.kaggle.com/datasets/shivanshcoding/1282-pokemon-139542-images-updated-pokedex-dataset) by Shivansh Coding on Kaggle.
