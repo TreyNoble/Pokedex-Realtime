@@ -36,3 +36,8 @@ Bulbasaur, Charizard, Squirtle, Pikachu, Eevee, Vaporeon, Snorlax, Gengar, Jiggl
 
 ## Dataset
 [1282 Pokemon | 139542 Images | Updated Pokedex Dataset](https://www.kaggle.com/datasets/shivanshcoding/1282-pokemon-139542-images-updated-pokedex-dataset) by Shivansh Coding on Kaggle.
+
+## Colab
+
+The colab folder cotaines the notebook that trains the models. The best.pt was derived from there, but it can be rerun to obtain other results that can be compared. All three models were trained in the same notebook on 
+the same dataset
